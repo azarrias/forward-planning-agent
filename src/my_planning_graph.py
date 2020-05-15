@@ -210,15 +210,23 @@ class PlanningGraph:
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
 
-        print("Goals: ", self.goal)
-
+        level = 0
         while not self._is_leveled:
-            lastLayer = self.literal_layers[-1]
-            print("layer: ", lastLayer._BaseLayer__store)
-            goalsFound = sum([1 for goal in self.goal if goal in lastLayer])
-            print("goals: ", goalsFound)
+            allGoalsMet = True
+            layer = self.literal_layers[-1]
+            if not all([goal in layer for goal in self.goal]):
+                allGoalsMet = False
+            if not allGoalsMet:
+                self._extend()
+                level += 1
+                continue
+
+            goalsAreMutex = any([layer.is_mutex(goalA, goalB) \
+                for goalA in self.goal for goalB in self.goal if goalA != goalB])
+            if not goalsAreMutex:
+                return level
             self._extend()
-            print(self._is_leveled)
+            level += 1
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
