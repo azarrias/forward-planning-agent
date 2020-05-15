@@ -20,8 +20,7 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
-
+        return any([~e in actionB.effects for e in actionA.effects])
 
     def _interference(self, actionA, actionB):
         """ Return True if the effects of either action negate the preconditions of the other 
@@ -35,7 +34,7 @@ class ActionLayer(BaseActionLayer):
         layers.ActionNode
         """
         # TODO: implement this function
-        raise NotImplementedError
+        return any([~e in self.parents[actionB] for e in actionA.effects])
 
     def _competing_needs(self, actionA, actionB):
         """ Return True if any preconditions of the two actions are pairwise mutex in the parent layer
@@ -50,8 +49,8 @@ class ActionLayer(BaseActionLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
-
+        return any([self.parent_layer.is_mutex(pa, pb) \
+            for pa in self.parents[actionA] for pb in self.parents[actionB]])
 
 class LiteralLayer(BaseLiteralLayer):
 
@@ -67,13 +66,13 @@ class LiteralLayer(BaseLiteralLayer):
         layers.BaseLayer.parent_layer
         """
         # TODO: implement this function
-        raise NotImplementedError
+        return all([self.parent_layer.is_mutex(aa, ab) \
+            for aa in self.parents[literalA] for ab in self.parents[literalB]])
 
     def _negation(self, literalA, literalB):
         """ Return True if two literals are negations of each other """
         # TODO: implement this function
-        raise NotImplementedError
-
+        return literalA == ~literalB
 
 class PlanningGraph:
     def __init__(self, problem, state, serialize=True, ignore_mutexes=False):
@@ -136,7 +135,20 @@ class PlanningGraph:
         Russell-Norvig 10.3.1 (3rd Edition)
         """
         # TODO: implement this function
-        raise NotImplementedError
+        levelSum = 0
+        level = 0
+        goals = set.copy(self.goal)
+        while not self._is_leveled and goals:
+            g = set.copy(goals)
+            while g:
+                goal = g.pop()
+                if goal in self.literal_layers[-1]:
+                    goals.remove(goal)
+                    levelSum += level
+            if not self._is_leveled and goals:
+                self._extend()
+                level += 1
+        return levelSum
 
     def h_maxlevel(self):
         """ Calculate the max level heuristic for the planning graph
@@ -190,8 +202,16 @@ class PlanningGraph:
         -----
         WARNING: you should expect long runtimes using this heuristic on complex problems
         """
-        # TODO: implement setlevel heuristic
-        raise NotImplementedError
+
+        print("Goals: ", self.goal)
+
+        while not self._is_leveled:
+            lastLayer = self.literal_layers[-1]
+            print("layer: ", lastLayer._BaseLayer__store)
+            goalsFound = sum([1 for goal in self.goal if goal in lastLayer])
+            print("goals: ", goalsFound)
+            self._extend()
+            print(self._is_leveled)
 
     ##############################################################################
     #                     DO NOT MODIFY CODE BELOW THIS LINE                     #
